@@ -19,11 +19,11 @@ jobs:
         with:
           node-version: 18
 
-      - name: Fetch Notion content
+      - name: Fetch Notion Page Content
         uses: MerkulovDaniil/notion4ever@latest
         with:
           notion-token: ${{ secrets.NOTION_TOKEN }}
-          database-id: ${{ secrets.NOTION_DATABASE_ID }}
+          page-id: ${{ secrets.NOTION_PAGE_ID }}
           output-folder: src/lib/notion-content
           output-format: md
 
