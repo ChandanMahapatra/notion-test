@@ -1,13 +1,12 @@
-name: Deploy SvelteKit to GitHub Pages
+name: Notion to Markdown Sync
 
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * *" # Runs daily at midnight
+  workflow_dispatch: # Allows manual triggering
 
 jobs:
-  build_and_deploy:
+  sync-notion:
     runs-on: ubuntu-latest
 
     steps:
@@ -17,24 +16,64 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
-
-      - name: Fetch Notion Page Content
-        uses: MerkulovDaniil/notion4ever@latest
-        with:
-          notion-token: ${{ secrets.NOTION_TOKEN }}
-          page-id: ${{ secrets.NOTION_PAGE_ID }}
-          output-folder: src/lib/notion-content
-          output-format: md
+          node-version: "20"
 
       - name: Install dependencies
-        run: npm install
+        run: |
+          npm init -y
+          npm install @souvikinator/notion-to-md
 
-      - name: Build SvelteKit site
-        run: npm run build
+      - name: Create conversion script
+        run: |
+          cat > convert.js << 'EOL'
+          const { NotionToMarkdown } = require("@souvikinator/notion-to-md");
+          const fs = require('fs').promises;
+          const path = require('path');
 
-      - name: Deploy to GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@v4
+          // Initialize the NotionToMarkdown instance
+          const n2m = new NotionToMarkdown({
+            notionClient: process.env.NOTION_TOKEN
+          });
+
+          async function main() {
+            try {
+              // Get page content
+              const mdblocks = await n2m.pageToMarkdown(process.env.NOTION_PAGE_ID);
+              const mdString = n2m.toMarkdownString(mdblocks);
+              
+              // Create output directory if it doesn't exist
+              const outputDir = 'content';
+              await fs.mkdir(outputDir, { recursive: true });
+              
+              // Write to file
+              const outputPath = path.join(outputDir, 'notion-content.md');
+              await fs.writeFile(outputPath, mdString.parent);
+              
+              console.log('Successfully converted Notion page to Markdown');
+            } catch (error) {
+              console.error('Error converting Notion page:', error);
+              process.exit(1);
+            }
+          }
+
+          main();
+          EOL
+
+      - name: Run conversion
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_PAGE_ID: ${{ secrets.NOTION_PAGE_ID }}
+        run: node convert.js
+
+      - name: Commit changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add content/
+          git commit -m "Update Notion content" || echo "No changes to commit"
+
+      - name: Push changes
+        uses: ad-m/github-push-action@master
         with:
-          branch: gh-pages
-          folder: build
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }}
