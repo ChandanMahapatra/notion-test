@@ -21,19 +21,23 @@ jobs:
       - name: Install dependencies
         run: |
           npm init -y
-          npm install @souvikinator/notion-to-md
+          npm install notion-to-md
 
       - name: Create conversion script
         run: |
           cat > convert.js << 'EOL'
-          const { NotionToMarkdown } = require("@souvikinator/notion-to-md");
+          const { NotionToMarkdown } = require("notion-to-md");
+          const { Client } = require("@notionhq/client");
           const fs = require('fs').promises;
           const path = require('path');
 
-          // Initialize the NotionToMarkdown instance
-          const n2m = new NotionToMarkdown({
-            notionClient: process.env.NOTION_TOKEN
+          // Initialize the Notion client
+          const notion = new Client({
+            auth: process.env.NOTION_TOKEN,
           });
+
+          // Initialize the NotionToMarkdown instance
+          const n2m = new NotionToMarkdown({ notionClient: notion });
 
           async function main() {
             try {
@@ -58,6 +62,9 @@ jobs:
 
           main();
           EOL
+
+      - name: Install Notion client
+        run: npm install @notionhq/client
 
       - name: Run conversion
         env:
