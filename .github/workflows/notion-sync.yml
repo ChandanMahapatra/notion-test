@@ -5,7 +5,6 @@ on:
     - cron: '0 0 * * *'  # Runs daily at midnight
   workflow_dispatch:  # Allows manual triggering
 
-# Add permissions configuration
 permissions:
   contents: write
 
@@ -25,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: |
           npm init -y
-          npm install notion-to-md
+          npm install notion-to-md @notionhq/client
           
       - name: Create conversion script
         run: |
@@ -35,40 +34,72 @@ jobs:
           const fs = require('fs').promises;
           const path = require('path');
           
-          // Initialize the Notion client
           const notion = new Client({
             auth: process.env.NOTION_TOKEN,
           });
           
-          // Initialize the NotionToMarkdown instance
           const n2m = new NotionToMarkdown({ notionClient: notion });
+          
+          async function getSubpages(pageId) {
+            try {
+              const response = await notion.blocks.children.list({
+                block_id: pageId,
+              });
+              
+              return response.results.filter(block => block.type === 'child_page');
+            } catch (error) {
+              console.error(`Error getting subpages: ${error}`);
+              return [];
+            }
+          }
+          
+          async function convertPageToMarkdown(pageId, filename) {
+            try {
+              const mdblocks = await n2m.pageToMarkdown(pageId);
+              const mdString = n2m.toMarkdownString(mdblocks);
+              
+              // Add frontmatter with page info
+              const page = await notion.pages.retrieve({ page_id: pageId });
+              const title = page.properties.title?.title[0]?.plain_text || 'Untitled';
+              const frontmatter = `---\ntitle: "${title}"\ndate: "${new Date().toISOString()}"\n---\n\n`;
+              
+              await fs.writeFile(filename, frontmatter + mdString.parent);
+              console.log(`Converted page to ${filename}`);
+            } catch (error) {
+              console.error(`Error converting page ${pageId}: ${error}`);
+            }
+          }
           
           async function main() {
             try {
-              // Get page content
-              const mdblocks = await n2m.pageToMarkdown(process.env.NOTION_PAGE_ID);
-              const mdString = n2m.toMarkdownString(mdblocks);
+              const contentDir = 'src/content';
+              await fs.mkdir(contentDir, { recursive: true });
               
-              // Create output directory if it doesn't exist
-              const outputDir = 'content';
-              await fs.mkdir(outputDir, { recursive: true });
+              // Convert main page
+              await convertPageToMarkdown(
+                process.env.NOTION_PAGE_ID,
+                path.join(contentDir, 'index.md')
+              );
               
-              // Write to file
-              const outputPath = path.join(outputDir, 'notion-content.md');
-              await fs.writeFile(outputPath, mdString.parent);
+              // Get and convert subpages
+              const subpages = await getSubpages(process.env.NOTION_PAGE_ID);
+              for (const subpage of subpages) {
+                const filename = `${subpage.id}.md`;
+                await convertPageToMarkdown(
+                  subpage.id,
+                  path.join(contentDir, filename)
+                );
+              }
               
-              console.log('Successfully converted Notion page to Markdown');
+              console.log('Successfully converted all pages');
             } catch (error) {
-              console.error('Error converting Notion page:', error);
+              console.error('Error in main process:', error);
               process.exit(1);
             }
           }
           
           main();
           EOL
-          
-      - name: Install Notion client
-        run: npm install @notionhq/client
           
       - name: Run conversion
         env:
@@ -80,7 +111,7 @@ jobs:
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add content/
+          git add src/content/
           git commit -m "Update Notion content" || echo "No changes to commit"
           
       - name: Push changes
