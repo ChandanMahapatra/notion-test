@@ -2,8 +2,8 @@ name: Notion to Markdown Sync
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # Runs daily at midnight
-  workflow_dispatch:  # Allows manual triggering
+    - cron: '0 0 * * *' # Runs daily at midnight
+  workflow_dispatch: # Allows manual triggering
 
 permissions:
   contents: write
@@ -11,35 +11,38 @@ permissions:
 jobs:
   sync-notion:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          
+
       - name: Install dependencies
         run: |
           npm init -y
           npm install notion-to-md @notionhq/client
-          
+
       - name: Create conversion script
         run: |
           cat > convert.js << 'EOL'
-          const { NotionToMarkdown } = require("notion-to-md");
-          const { Client } = require("@notionhq/client");
-          const fs = require('fs').promises;
-          const path = require('path');
-          
+          import { NotionToMarkdown } from "notion-to-md";
+          import { Client } from "@notionhq/client";
+          import { promises as fs } from 'fs';
+          import path from 'path';
+          import { fileURLToPath } from 'url';
+
+          const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
           const notion = new Client({
             auth: process.env.NOTION_TOKEN,
           });
-          
+
           const n2m = new NotionToMarkdown({ notionClient: notion });
-          
+
           async function getSubpages(pageId) {
             try {
               const response = await notion.blocks.children.list({
@@ -52,7 +55,7 @@ jobs:
               return [];
             }
           }
-          
+
           async function convertPageToMarkdown(pageId, filename) {
             try {
               const mdblocks = await n2m.pageToMarkdown(pageId);
@@ -60,7 +63,7 @@ jobs:
               
               // Add frontmatter with page info
               const page = await notion.pages.retrieve({ page_id: pageId });
-              const title = page.properties.title?.title[0]?.plain_text || 'Untitled';
+              const title = page.properties?.title?.title?.[0]?.plain_text || 'Untitled';
               const frontmatter = `---\ntitle: "${title}"\ndate: "${new Date().toISOString()}"\n---\n\n`;
               
               await fs.writeFile(filename, frontmatter + mdString.parent);
@@ -69,7 +72,7 @@ jobs:
               console.error(`Error converting page ${pageId}: ${error}`);
             }
           }
-          
+
           async function main() {
             try {
               const contentDir = 'src/content';
@@ -97,23 +100,23 @@ jobs:
               process.exit(1);
             }
           }
-          
+
           main();
           EOL
-          
+
       - name: Run conversion
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_PAGE_ID: ${{ secrets.NOTION_PAGE_ID }}
         run: node convert.js
-        
+
       - name: Commit changes
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add src/content/
           git commit -m "Update Notion content" || echo "No changes to commit"
-          
+
       - name: Push changes
         uses: ad-m/github-push-action@master
         with:
