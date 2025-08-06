@@ -43,6 +43,17 @@ jobs:
 
           const n2m = new NotionToMarkdown({ notionClient: notion });
 
+          // Turn titles into URL/file slugs
+          function slugify(title) {
+            return String(title || '')
+              .toLowerCase()
+              .normalize('NFKD')
+              .replace(/[\u0300-\u036f]/g, '')
+              .replace(/[^a-z0-9]+/g, '-')
+              .replace(/^-+|-+$/g, '')
+              .replace(/-+/g, '-');
+          }
+
           async function getSubpages(pageId) {
             try {
               const response = await notion.blocks.children.list({
@@ -51,25 +62,42 @@ jobs:
               
               return response.results.filter(block => block.type === 'child_page');
             } catch (error) {
-              console.error(`Error getting subpages: ${error}`);
+              console.error(\`Error getting subpages: \${error}\`);
               return [];
             }
           }
 
-          async function convertPageToMarkdown(pageId, filename) {
+          async function getPageTitle(pageId) {
+            try {
+              const page = await notion.pages.retrieve({ page_id: pageId });
+              // Try common title property names
+              const title =
+                page.properties?.title?.title?.[0]?.plain_text ||
+                page.properties?.Name?.title?.[0]?.plain_text ||
+                'Untitled';
+              return title || 'Untitled';
+            } catch (e) {
+              console.error('Failed to fetch page title', e);
+              return 'Untitled';
+            }
+          }
+
+          async function convertPageToMarkdown(pageId, outPath, explicitTitle) {
             try {
               const mdblocks = await n2m.pageToMarkdown(pageId);
               const mdString = n2m.toMarkdownString(mdblocks);
               
               // Add frontmatter with page info
-              const page = await notion.pages.retrieve({ page_id: pageId });
-              const title = page.properties?.title?.title?.[0]?.plain_text || 'Untitled';
-              const frontmatter = `---\ntitle: "${title}"\ndate: "${new Date().toISOString()}"\n---\n\n`;
+              const title = explicitTitle || await getPageTitle(pageId);
+              const slug = slugify(title);
+              const frontmatter = \`---\\ntitle: "\${title}"\\ndate: "\${new Date().toISOString()}"\\nslug: "\${slug}"\\n---\\n\\n\`;
               
-              await fs.writeFile(filename, frontmatter + mdString.parent);
-              console.log(`Converted page to ${filename}`);
+              await fs.writeFile(outPath, frontmatter + mdString.parent);
+              console.log(\`Converted page to \${outPath}\`);
+              return { title, slug, path: outPath };
             } catch (error) {
-              console.error(`Error converting page ${pageId}: ${error}`);
+              console.error(\`Error converting page \${pageId}: \${error}\`);
+              return null;
             }
           }
 
@@ -78,20 +106,33 @@ jobs:
               const contentDir = 'src/content';
               await fs.mkdir(contentDir, { recursive: true });
               
-              // Convert main page
+              // Convert main/base page to index.md (home page)
+              const baseTitle = await getPageTitle(process.env.NOTION_PAGE_ID);
               await convertPageToMarkdown(
                 process.env.NOTION_PAGE_ID,
-                path.join(contentDir, 'index.md')
+                path.join(contentDir, 'index.md'),
+                baseTitle
               );
               
-              // Get and convert subpages
+              // Get and convert subpages (use Notion subpage title as filename slug)
               const subpages = await getSubpages(process.env.NOTION_PAGE_ID);
+
+              // Ensure unique filenames if slugs collide
+              const used = new Set();
+
               for (const subpage of subpages) {
-                const filename = `${subpage.id}.md`;
-                await convertPageToMarkdown(
-                  subpage.id,
-                  path.join(contentDir, filename)
-                );
+                const title = subpage.child_page?.title || 'Untitled';
+                let slug = slugify(title) || 'untitled';
+                let filename = \`\${slug}.md\`;
+                let i = 1;
+                while (used.has(filename)) {
+                  i += 1;
+                  filename = \`\${slug}-\${i}.md\`;
+                }
+                used.add(filename);
+
+                const outPath = path.join(contentDir, filename);
+                await convertPageToMarkdown(subpage.id, outPath, title);
               }
               
               console.log('Successfully converted all pages');
