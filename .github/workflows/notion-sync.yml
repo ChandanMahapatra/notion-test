@@ -90,13 +90,19 @@ jobs:
               // Add frontmatter with page info
               const title = explicitTitle || await getPageTitle(pageId);
               const slug = slugify(title);
-              const frontmatter = \`---\\ntitle: "\${title}"\\ndate: "\${new Date().toISOString()}"\\nslug: "\${slug}"\\n---\\n\\n\`;
+              // Build frontmatter using classic string concatenation to avoid template literal escaping issues
+              const frontmatter =
+                '---\\n' +
+                'title: "' + title.replace(/"/g, '\\"') + '"\\n' +
+                'date: "' + new Date().toISOString() + '"\\n' +
+                'slug: "' + slug + '"\\n' +
+                '---\\n\\n';
               
               await fs.writeFile(outPath, frontmatter + mdString.parent);
-              console.log(\`Converted page to \${outPath}\`);
+              console.log('Converted page to ' + outPath);
               return { title, slug, path: outPath };
             } catch (error) {
-              console.error(`Error converting page ${pageId}: ${error}`);
+              console.error('Error converting page ' + pageId + ': ' + error);
               return null;
             }
           }
