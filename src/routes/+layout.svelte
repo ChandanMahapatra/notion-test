@@ -1,14 +1,13 @@
 <!-- src/routes/+layout.svelte -->
 <script>
 	import { dev } from '$app/environment';
-	import { inject } from '@sveltejs/kit/vite';
 
 	// Set the base path for GitHub Pages
 	let base = dev ? '' : '/notion-test';
 </script>
 
 <nav class="p-4 bg-gray-100">
-	<a href="{base}/" class="text-lg font-bold">Home</a>
+	<a href={`${base}/`} class="text-lg font-bold">Home</a>
 </nav>
 
 <main class="max-w-4xl mx-auto p-6">
