@@ -62,7 +62,7 @@ jobs:
               
               return response.results.filter(block => block.type === 'child_page');
             } catch (error) {
-              console.error(\`Error getting subpages: \${error}\`);
+              console.error(`Error getting subpages: ${error}`);
               return [];
             }
           }
@@ -96,7 +96,7 @@ jobs:
               console.log(\`Converted page to \${outPath}\`);
               return { title, slug, path: outPath };
             } catch (error) {
-              console.error(\`Error converting page \${pageId}: \${error}\`);
+              console.error(`Error converting page ${pageId}: ${error}`);
               return null;
             }
           }
