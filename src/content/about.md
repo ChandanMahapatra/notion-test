@@ -1,3 +1,3 @@
----\ntitle: "About"\ndate: "2025-09-02T01:50:46.469Z"\nslug: "about"\n---\n\n
+---\ntitle: "About"\ndate: "2025-09-03T01:43:15.367Z"\nslug: "about"\n---\n\n
 Hi my name is
 
