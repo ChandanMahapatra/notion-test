@@ -152,6 +152,34 @@ jobs:
                 if(baseSlug === 'portfolio' || baseSlug === 'my-portfolio'){
                   const portfolioResult = await convertPageToMarkdown(sub.id, path.join(rootDir, 'portfolio.md'), title, true);
                   if(portfolioResult) processed.add('portfolio.md');
+
+                  // NEW: Recursively process portfolio child pages as project pages
+                  console.log('[PORTFOLIO] Fetching child pages inside portfolio');
+                  const portfolioChildren = await getSubpages(sub.id);
+                  for (const pchild of portfolioChildren) {
+                    const pTitle = pchild.child_page?.title || 'Untitled';
+                    let pSlug = slugify(pTitle) || 'untitled';
+
+                    // uniqueness with existing slugCounts map
+                    if(slugCounts.has(pSlug)) {
+                      const n = slugCounts.get(pSlug) + 1;
+                      slugCounts.set(pSlug, n);
+                      pSlug = pSlug + '-' + n;
+                    } else {
+                      slugCounts.set(pSlug, 0);
+                    }
+
+                    // skip reserved (avoid overwriting top-level pages)
+                    if(reserved.has(pSlug)) {
+                      console.log('[PORTFOLIO][SKIP-RESERVED] ' + pSlug);
+                      continue;
+                    }
+
+                    const pOutFile = path.join(projectsDir, pSlug + '.md');
+                    console.log('[PORTFOLIO][PROJECT] Converting nested project: ' + pTitle + ' -> ' + pOutFile);
+                    const pResult = await convertPageToMarkdown(pchild.id, pOutFile, pTitle, true);
+                    if(pResult) processed.add(path.join('projects', pSlug + '.md'));
+                  }
                 } else if (baseSlug === 'about') {
                   const aboutResult = await convertPageToMarkdown(sub.id, path.join(rootDir, 'about.md'), title, true);
                   if(aboutResult) processed.add('about.md');
