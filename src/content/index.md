@@ -1,7 +1,10 @@
----\ntitle: "Notion Test"\ndate: "2025-09-25T01:46:58.989Z"\nslug: "notion-test"\n---\n\n
+---\ntitle: "Notion Test"\ndate: "2025-09-25T04:37:32.681Z"\nslug: "notion-test"\n---\n\n
+This is the home page and this is some basic content
+
+
 ## About
 
-Hi my name is
+Hi my name is Roy. I am in California
 
 
 ## Portfolio
