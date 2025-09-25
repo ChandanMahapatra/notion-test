@@ -5,6 +5,10 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+concurrency:
+  group: pages-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   pages: write
@@ -22,6 +26,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
+
+      - name: Validate dependency cache
+        id: npm-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -31,6 +45,14 @@ jobs:
 
       - name: Build site
         run: npm run build
+
+      - name: Add 404 fallback (copy index.html)
+        run: |
+          if [ -f build/index.html ]; then
+            cp build/index.html build/404.html
+          else
+            echo "index.html not found in build output" >&2; exit 1;
+          fi
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

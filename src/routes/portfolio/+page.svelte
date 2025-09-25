@@ -1,6 +1,7 @@
 <!-- src/routes/portfolio/+page.svelte -->
 <script>
 	export let data;
+	import { base } from '$app/paths';
 	$: portfolio = data.portfolio;
 </script>
 
@@ -24,7 +25,7 @@
 			{#each data.projects as project}
 				<article class="project-card">
 					<h2 class="project-title">
-						<a href={'/projects/' + project.slug}>{project.title}</a>
+						<a href={base + '/projects/' + project.slug}>{project.title}</a>
 					</h2>
 					<time class="project-date" datetime={project.date}>
 						{new Date(project.date).toLocaleDateString('en-US', {
@@ -32,7 +33,7 @@
 							month: 'short'
 						})}
 					</time>
-					<a class="project-link" href={'/projects/' + project.slug}>Read more →</a>
+					<a class="project-link" href={base + '/projects/' + project.slug}>Read more →</a>
 				</article>
 			{/each}
 		</div>

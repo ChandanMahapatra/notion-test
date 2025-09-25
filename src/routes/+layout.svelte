@@ -1,23 +1,16 @@
 <!-- src/routes/+layout.svelte -->
 <script>
 	import '../styles.css';
-	import { dev } from '$app/environment';
 	import { page } from '$app/stores';
-
-	// Set the base path for GitHub Pages
-	let base = dev ? '' : '/notion-test';
+	import { base } from '$app/paths';
 </script>
 
 <nav class="navigation">
 	<div class="nav-container">
-		<a href="/" class="nav-brand">Portfolio</a>
+		<a href={base + '/'} class="nav-brand">Portfolio</a>
 		<div class="nav-links">
-			<a href="/about" class="nav-link" class:active={$page.url.pathname === '/about'}>About</a>
-			<a
-				href="/portfolio"
-				class="nav-link"
-				class:active={$page.url.pathname.startsWith('/portfolio')}>Portfolio</a
-			>
+			<a href={base + '/about'} class="nav-link" class:active={$page.url.pathname === base + '/about'}>About</a>
+			<a href={base + '/portfolio'} class="nav-link" class:active={$page.url.pathname.startsWith(base + '/portfolio')}>Portfolio</a>
 		</div>
 	</div>
 </nav>

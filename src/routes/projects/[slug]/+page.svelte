@@ -1,6 +1,7 @@
 <!-- src/routes/projects/[slug]/+page.svelte -->
 <script>
 	export let data;
+	import { base } from '$app/paths';
 	$: ({ title, date, component: Component } = data);
 </script>
 
