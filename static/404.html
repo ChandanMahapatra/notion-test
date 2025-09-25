@@ -1,44 +1,102 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Page Not Found</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <style>
-      :root { color-scheme: light dark; }
-      body { font-family: system-ui, Arial, sans-serif; margin:0; padding:2rem; display:flex; min-height:100dvh; align-items:center; justify-content:center; background: var(--bg, #0d1117); color: var(--fg, #e6edf3); }
-      main { max-width: 640px; }
-      h1 { font-size: clamp(2.5rem, 6vw, 4rem); line-height:1.05; margin:0 0 1rem; }
-      p { font-size: 1.1rem; line-height:1.5; }
-      a { color: #58a6ff; text-decoration:none; }
-      a:hover, a:focus-visible { text-decoration:underline; }
-      .hint { opacity:.75; margin-top:2rem; font-size:.9rem; }
-      .actions { margin-top:2rem; display:flex; gap:1rem; flex-wrap:wrap; }
-      .btn { background:#1f6feb; color:#fff; padding:.75rem 1.25rem; border-radius:999px; font-weight:600; display:inline-block; }
-      .btn:hover { background:#388bfd; }
-    </style>
-  </head>
-  <body>
-    <main>
-      <h1>Lost in Space</h1>
-      <p>The page you're looking for doesn't exist (yet). If this is a deep link, it should load once the app bootstraps. Redirecting you home…</p>
-      <div class="actions">
-        <a class="btn" id="home-link" href="/">Go Home Now</a>
-        <a href="https://github.com/ChandanMahapatra/notion-test/issues/new" rel="noopener" target="_blank">Report an issue</a>
-      </div>
-      <p class="hint">This is a static 404 fallback for GitHub Pages single-page app routing. It duplicates <code>index.html</code> at build time to allow client-side routing to hydrate properly.</p>
-    </main>
-    <script>
-      // Adjust home link for repo subpath when hosted on GitHub Pages
-      (function(){
-        var base = window.location.pathname.split('/').slice(0,2).join('/');
-        // If repository-based hosting (e.g., /notion-test/...), ensure link points to base.
-        if (base && base !== '/') {
-          document.getElementById('home-link').setAttribute('href', base + '/');
-        }
-        // Auto redirect after short delay to let user read
-        setTimeout(function(){ window.location.replace(document.getElementById('home-link').getAttribute('href')); }, 2500);
-      })();
-    </script>
-  </body>
+	<head>
+		<meta charset="UTF-8" />
+		<title>Page Not Found</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<style>
+			:root {
+				color-scheme: light dark;
+			}
+			body {
+				font-family: system-ui, Arial, sans-serif;
+				margin: 0;
+				padding: 2rem;
+				display: flex;
+				min-height: 100dvh;
+				align-items: center;
+				justify-content: center;
+				background: var(--bg, #0d1117);
+				color: var(--fg, #e6edf3);
+			}
+			main {
+				max-width: 640px;
+			}
+			h1 {
+				font-size: clamp(2.5rem, 6vw, 4rem);
+				line-height: 1.05;
+				margin: 0 0 1rem;
+			}
+			p {
+				font-size: 1.1rem;
+				line-height: 1.5;
+			}
+			a {
+				color: #58a6ff;
+				text-decoration: none;
+			}
+			a:hover,
+			a:focus-visible {
+				text-decoration: underline;
+			}
+			.hint {
+				opacity: 0.75;
+				margin-top: 2rem;
+				font-size: 0.9rem;
+			}
+			.actions {
+				margin-top: 2rem;
+				display: flex;
+				gap: 1rem;
+				flex-wrap: wrap;
+			}
+			.btn {
+				background: #1f6feb;
+				color: #fff;
+				padding: 0.75rem 1.25rem;
+				border-radius: 999px;
+				font-weight: 600;
+				display: inline-block;
+			}
+			.btn:hover {
+				background: #388bfd;
+			}
+		</style>
+	</head>
+	<body>
+		<main>
+			<h1>Lost in Space</h1>
+			<p>
+				The page you're looking for doesn't exist (yet). If this is a deep link, it should load once
+				the app bootstraps. Redirecting you home…
+			</p>
+			<div class="actions">
+				<a class="btn" id="home-link" href="/">Go Home Now</a>
+				<a
+					href="https://github.com/ChandanMahapatra/notion-test/issues/new"
+					rel="noopener"
+					target="_blank"
+					>Report an issue</a
+				>
+			</div>
+			<p class="hint">
+				This is a static 404 fallback for GitHub Pages single-page app routing. It duplicates
+				<code>index.html</code> at build time to allow client-side routing to hydrate properly.
+			</p>
+		</main>
+		<script>
+			// Adjust home link for repo subpath when hosted on GitHub Pages
+			(function () {
+				var base = window.location.pathname.split('/').slice(0, 2).join('/');
+				// If repository-based hosting (e.g., /notion-test/...), ensure link points to base.
+				if (base && base !== '/') {
+					document.getElementById('home-link').setAttribute('href', base + '/');
+				}
+				// Auto redirect after short delay to let user read
+				setTimeout(function () {
+					window.location.replace(document.getElementById('home-link').getAttribute('href'));
+				}, 2500);
+			})();
+		</script>
+	</body>
 </html>

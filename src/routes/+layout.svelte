@@ -7,7 +7,7 @@
 
 <svelte:head>
 	<link rel="icon" href={base + '/favicon.png'} />
-	<link rel="stylesheet" href={base + '/styles.css'} />
+	<!-- Global CSS is imported in the script; SvelteKit emits hashed CSS files automatically. -->
 </svelte:head>
 
 <nav class="navigation">
