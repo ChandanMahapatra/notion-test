@@ -1,39 +1,26 @@
 // src/routes/[slug]/+page.js
-// Svelte 5: components are no longer classes; do not call .render().
-// Instead, pass the component to the page and let +page.svelte render it.
 import { error } from '@sveltejs/kit';
 
+const ALLOWED_TOP_LEVEL = new Set(['about', 'portfolio']);
+
 export async function load({ params }) {
+  const { slug } = params;
+  if (!slug || slug.includes('/') || slug.includes('.')) {
+    throw error(404, 'Page not found');
+  }
+  if (!ALLOWED_TOP_LEVEL.has(slug)) {
+    throw error(404, 'Page not found');
+  }
   try {
-    const { slug } = params;
-    const modules = import.meta.glob('../../content/*.md', { eager: true });
-    const keys = Object.keys(modules);
-    console.log('[slug]/+page.js load()', { slug, keys });
-
-    const matchKey = keys.find((k) => k.endsWith(`/${slug}.md`));
-    if (!matchKey) {
-      console.warn('[slug]/+page.js: no markdown found for slug', slug);
-      throw error(404, `Post "${slug}" not found`);
-    }
-
-    const mod = modules[matchKey];
-    const metadata = mod?.metadata ?? {};
-    const component = mod?.default;
-
-    if (!component) {
-      console.error('[slug]/+page.js: module found but missing default export');
-      throw error(500, 'Invalid post module');
-    }
-
+    const post = await import(`../../content/${slug}.md`);
+    if (!post || !post.default) throw error(404, 'Page not found');
     return {
-      data: {
-        title: metadata.title || 'Untitled',
-        date: metadata.date || new Date().toISOString(),
-        component // pass the Svelte component to the page
-      }
+      title: post.metadata?.title || 'Untitled',
+      date: post.metadata?.date || new Date().toISOString(),
+      component: post.default
     };
-  } catch (err) {
-    console.error('Error loading post:', err);
-    throw (err?.status ? err : error(500, 'Failed to load post'));
+  } catch (e) {
+    console.error('Error loading top-level page', e);
+    throw error(404, 'Page not found');
   }
 }

@@ -1,13 +1,10 @@
----\ntitle: "Portfolio"\ndate: "2025-09-06T01:42:57.984Z"\nslug: "portfolio"\n---\n\n
-This is what I have done …
+---
+title: "Portfolio"
+date: "2025-09-06T01:42:57.984Z"
+slug: "portfolio"
+---
 
+Welcome to my project portfolio. Below you'll find a curated selection of my work across web applications, tooling, and product experiments.
 
-## Project 1
-
-Some info about project 1
-
-
-## Project 2
-
-Some info about project 2
+Browse the project cards to dive into individual case studies.
 
