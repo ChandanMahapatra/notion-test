@@ -21,9 +21,9 @@ const config = {
       precompress: false,
       strict: true
     }),
+    // Only set base for GitHub Pages subdirectory deployments; assets must be absolute if specified, so omit it.
     paths: {
-      base: process.env.NODE_ENV === 'production' ? `/${repoName}` : '',
-      assets: process.env.NODE_ENV === 'production' ? `/${repoName}` : ''
+      base: process.env.NODE_ENV === 'production' ? `/${repoName}` : ''
     },
     prerender: {
       handleMissingId: 'ignore'

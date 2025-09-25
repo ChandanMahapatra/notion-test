@@ -5,6 +5,11 @@
 	import { base } from '$app/paths';
 </script>
 
+<svelte:head>
+	<link rel="icon" href={base + '/favicon.png'} />
+	<link rel="stylesheet" href={base + '/styles.css'} />
+</svelte:head>
+
 <nav class="navigation">
 	<div class="nav-container">
 		<a href={base + '/'} class="nav-brand">Portfolio</a>
