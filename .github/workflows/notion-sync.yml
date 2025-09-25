@@ -49,10 +49,23 @@ jobs:
               .replace(/-+/g,'-');
           }
 
+          async function listChildPageBlocks(pageId){
+            const collected = [];
+            let cursor = undefined;
+            do {
+              const res = await notion.blocks.children.list({ block_id: pageId, start_cursor: cursor });
+              collected.push(...res.results.filter(b => b.type === 'child_page'));
+              cursor = res.has_more ? res.next_cursor : undefined;
+            } while(cursor);
+            return collected;
+          }
+
           async function getSubpages(pageId){
             try {
-              const res = await notion.blocks.children.list({ block_id: pageId });
-              return res.results.filter(b => b.type === 'child_page');
+              const pages = await listChildPageBlocks(pageId);
+              console.log('Found ' + pages.length + ' direct subpages under root');
+              pages.forEach(p => console.log('  - ' + p.child_page?.title + ' (' + p.id + ')'));
+              return pages;
             } catch(e){
               console.error('Error fetching subpages', e); return [];
             }
@@ -69,13 +82,12 @@ jobs:
             try {
               let mdblocks = await n2m.pageToMarkdown(pageId);
               if(filterChildPages){
-                const children = await notion.blocks.children.list({ block_id: pageId });
-                const childIds = children.results.filter(b=>b.type==='child_page').map(b=>b.id);
-                mdblocks = mdblocks.filter(b => !childIds.includes(b.blockId));
+                // Remove child_page blocks so they are handled separately
+                mdblocks = mdblocks.filter(b => b.type !== 'child_page');
               }
               const mdString = n2m.toMarkdownString(mdblocks);
               const title = explicitTitle || await getPageTitle(pageId);
-              const slug = slugify(title);
+              const slug = slugify(title) || 'untitled';
               const frontmatter = '---\n'
                 + 'title: "' + title.replace(/"/g,'\\"') + '"\n'
                 + 'date: "' + new Date().toISOString() + '"\n'
@@ -90,13 +102,13 @@ jobs:
               if(write){
                 await fs.mkdir(path.dirname(outPath), { recursive: true });
                 await fs.writeFile(outPath, full);
-                console.log('Updated: ' + outPath);
+                console.log('[WRITE] ' + outPath);
               } else {
-                console.log('No changes: ' + outPath);
+                console.log('[SKIP ] ' + outPath + ' (no changes)');
               }
               return { title, slug, path: outPath };
             } catch(e){
-              console.error('Convert failed for ' + pageId, e); return null;
+              console.error('[ERROR] Convert failed for ' + pageId, e); return null;
             }
           }
 
@@ -106,8 +118,8 @@ jobs:
             await fs.mkdir(projectsDir, { recursive: true });
             const processed = new Set();
 
+            console.log('== Converting root page ==');
             const baseTitle = await getPageTitle(process.env.NOTION_PAGE_ID);
-            // Convert base page into index.md (treat as homepage content only)
             const baseResult = await convertPageToMarkdown(
               process.env.NOTION_PAGE_ID,
               path.join(rootDir, 'index.md'),
@@ -116,31 +128,48 @@ jobs:
             );
             if(baseResult) processed.add('index.md');
 
+            console.log('== Fetching subpages ==');
             const subpages = await getSubpages(process.env.NOTION_PAGE_ID);
+            const reserved = new Set(['about','index','portfolio','my-portfolio']);
+            const slugCounts = new Map();
+
             for(const sub of subpages){
               const title = sub.child_page?.title || 'Untitled';
-              const slug = slugify(title);
-              const reserved = new Set(['about','index','portfolio','my-portfolio']);
-              if(reserved.has(slug)){
-                console.log('Handling reserved slug: ' + slug);
-                if(slug === 'portfolio' || slug === 'my-portfolio'){
+              let slug = slugify(title) || 'untitled';
+
+              // Ensure uniqueness if duplicate slugs
+              if(slugCounts.has(slug)){
+                const n = slugCounts.get(slug) + 1;
+                slugCounts.set(slug, n);
+                slug = slug + '-' + n;
+              } else {
+                slugCounts.set(slug, 0);
+              }
+
+              if(reserved.has(slug.replace(/-\d+$/,''))){
+                const baseSlug = slug.replace(/-\d+$/,'');
+                console.log('[RESERVED] Handling ' + slug + ' as top-level page');
+                if(baseSlug === 'portfolio' || baseSlug === 'my-portfolio'){
                   const portfolioResult = await convertPageToMarkdown(sub.id, path.join(rootDir, 'portfolio.md'), title, true);
                   if(portfolioResult) processed.add('portfolio.md');
-                } else if (slug === 'about') {
+                } else if (baseSlug === 'about') {
                   const aboutResult = await convertPageToMarkdown(sub.id, path.join(rootDir, 'about.md'), title, true);
                   if(aboutResult) processed.add('about.md');
                 }
                 continue;
               }
+
               const outFile = path.join(projectsDir, slug + '.md');
               const result = await convertPageToMarkdown(sub.id, outFile, title);
               if(result) processed.add(path.join('projects', slug + '.md'));
             }
 
-            console.log('Processed files count: ' + processed.size);
+            console.log('== Summary ==');
+            console.log('Processed: ' + Array.from(processed).join(', '));
+            console.log('Total pages written/checked: ' + processed.size);
           }
 
-          await main();
+          await main().catch(e => { console.error('Fatal error in main()', e); process.exit(1); });
           EOL
 
       - name: Run conversion
