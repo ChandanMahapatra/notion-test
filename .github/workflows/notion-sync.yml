@@ -120,10 +120,16 @@ jobs:
             for(const sub of subpages){
               const title = sub.child_page?.title || 'Untitled';
               const slug = slugify(title);
-              // If this subpage is meant to be the Portfolio overview (detect by title)
-              if(slug === 'portfolio' || slug === 'my-portfolio'){
-                const portfolioResult = await convertPageToMarkdown(sub.id, path.join(rootDir, 'portfolio.md'), title, true);
-                if(portfolioResult) processed.add('portfolio.md');
+              const reserved = new Set(['about','index','portfolio','my-portfolio']);
+              if(reserved.has(slug)){
+                console.log('Handling reserved slug: ' + slug);
+                if(slug === 'portfolio' || slug === 'my-portfolio'){
+                  const portfolioResult = await convertPageToMarkdown(sub.id, path.join(rootDir, 'portfolio.md'), title, true);
+                  if(portfolioResult) processed.add('portfolio.md');
+                } else if (slug === 'about') {
+                  const aboutResult = await convertPageToMarkdown(sub.id, path.join(rootDir, 'about.md'), title, true);
+                  if(aboutResult) processed.add('about.md');
+                }
                 continue;
               }
               const outFile = path.join(projectsDir, slug + '.md');
