@@ -1,6 +1,6 @@
 ---
 title: "Project 2"
-date: "2025-12-24T02:00:49.742Z"
+date: "2025-12-25T02:03:10.641Z"
 slug: "project-2"
 ---
 
