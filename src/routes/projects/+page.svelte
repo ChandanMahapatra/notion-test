@@ -1,6 +1,7 @@
 <!-- src/routes/projects/+page.svelte -->
 <script>
 	export let data;
+	import { base } from '$app/paths';
 </script>
 
 <svelte:head>
@@ -19,7 +20,7 @@
 				<article class="project-card">
 					<div class="card-content">
 						<h2 class="project-title">
-							<a href="/{project.slug}" class="project-link">{project.title}</a>
+							<a href={base + '/projects/' + project.slug} class="project-link">{project.title}</a>
 						</h2>
 						<time class="project-date" datetime={project.date}>
 							{new Date(project.date).toLocaleDateString('en-US', {
