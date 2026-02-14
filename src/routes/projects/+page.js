@@ -1,12 +1,8 @@
 /* src/routes/projects/+page.js */
 export async function load() {
   try {
-    const modules = import.meta.glob('../../content/*.md');
+    const modules = import.meta.glob('../../content/projects/*.md');
     const projectPromises = Object.entries(modules)
-      .filter(([path]) => {
-        // Only include files that are actual projects (not index or about)
-        return !path.includes('index.md') && !path.includes('about.md');
-      })
       .map(async ([path, resolver]) => {
         const module = await resolver();
         const slug = path.split('/').pop()?.replace('.md', '') || '';

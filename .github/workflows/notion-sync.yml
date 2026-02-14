@@ -23,12 +23,14 @@ jobs:
 
       - name: Install dependencies
         run: |
+          mkdir -p temp-notion-sync && cd temp-notion-sync
           npm init -y
           npm install notion-to-md @notionhq/client
+          cd ..
 
       - name: Create conversion script
         run: |
-          cat > convert.js << 'EOL'
+          cat > temp-notion-sync/convert.js << 'EOL'
           import { NotionToMarkdown } from "notion-to-md";
           import { Client } from "@notionhq/client";
           import { promises as fs } from 'fs';
@@ -36,6 +38,7 @@ jobs:
           import { fileURLToPath } from 'url';
 
           const __dirname = path.dirname(fileURLToPath(import.meta.url));
+          const parentDir = path.dirname(__dirname);
           const notion = new Client({ auth: process.env.NOTION_TOKEN });
           const n2m = new NotionToMarkdown({ notionClient: notion });
 
@@ -78,6 +81,13 @@ jobs:
             } catch(e){ return 'Untitled'; }
           }
 
+          async function getPageLastEditedTime(pageId){
+            try {
+              const page = await notion.pages.retrieve({ page_id: pageId });
+              return page.last_edited_time || new Date().toISOString();
+            } catch(e){ return new Date().toISOString(); }
+          }
+
           async function convertPageToMarkdown(pageId, outPath, explicitTitle, filterChildPages=false){
             try {
               let mdblocks = await n2m.pageToMarkdown(pageId);
@@ -88,9 +98,10 @@ jobs:
               const mdString = n2m.toMarkdownString(mdblocks);
               const title = explicitTitle || await getPageTitle(pageId);
               const slug = slugify(title) || 'untitled';
+              const lastEditedTime = await getPageLastEditedTime(pageId);
               const frontmatter = '---\n'
                 + 'title: "' + title.replace(/"/g,'\\"') + '"\n'
-                + 'date: "' + new Date().toISOString() + '"\n'
+                + 'date: "' + lastEditedTime + '"\n'
                 + 'slug: "' + slug + '"\n'
                 + '---\n\n';
               const full = frontmatter + mdString.parent;
@@ -113,7 +124,7 @@ jobs:
           }
 
           async function main(){
-            const rootDir = 'src/content';
+            const rootDir = path.join(parentDir, 'src/content');
             const projectsDir = path.join(rootDir, 'projects');
             await fs.mkdir(projectsDir, { recursive: true });
             const processed = new Set();
@@ -204,7 +215,7 @@ jobs:
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_PAGE_ID: ${{ secrets.NOTION_PAGE_ID }}
-        run: node convert.js
+        run: cd temp-notion-sync && node convert.js
 
       - name: Commit changes
         run: |
@@ -214,7 +225,7 @@ jobs:
           git commit -m "Update Notion content" || echo "No changes to commit"
 
       - name: Push changes
-        uses: ad-m/github-push-action@master
+        uses: ad-m/github-push-action@v0.8.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           branch: ${{ github.ref }}
