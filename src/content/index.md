@@ -1,7 +1,7 @@
 ---
-title: "Untitled"
+title: "Notion Test"
 date: "2025-09-25T04:36:00.000Z"
-slug: "untitled"
+slug: "notion-test"
 ---
 
 
